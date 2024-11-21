@@ -2,5 +2,11 @@
   "name": "@bel/utils",
   "version": "0.0.1",
   "license": "MIT",
-  "exports": "./index.ts"
+  "exports": {
+    ".": "./index.ts",
+    "./track": "./track.ts",
+    "./colors": "./colors.ts",
+    "./line-generator": "./line-generator.ts.ts",
+
+  }
 }
