@@ -1,64 +1,19 @@
-import { readableStreamToJSON, readableStreamToText, spawn, type BunFile, type FileSink } from 'bun';
-// Writable(
-// stream.
-
-// import * as J from './node_modules/@cdauth/json-stream-es/src/index'
-// J.
-// const slr = new J.JsonSerializer()
-
-// J
-import { ZSTDCompress, ZSTDDecompress } from 'simple-zstd';
+import { type BunFile, type FileSink } from 'bun';
+import { ZSTDCompress } from 'simple-zstd';
 
 import { createWriteStream } from 'fs';
 import { Readable } from 'node:stream';
-// import * as J from "@std/json";
-// console.log({ J })
-
-
-
-
-
-
 import fs from 'node:fs';
-// cimport {R }from 'remeda'
 import path from 'node:path';
-// import { compress, init } from '@bokuweb/zstd-wasm';
 
 import { range } from 'lodash';
 import * as J2C from '@json2csv/node';
-// import type { Simplify } from 'remeda/dist/types/type-fest/simplify';
-// import * as J from './node_modules/@cdauth/json-stream-es/src';
 import { args } from './args';
 import { lineGenerator, lines } from './line-generator';
-import { jsonLines, pipedJson } from './piped-json';
+import { pipedJson } from './piped-json';
 import { pipedText } from './piped';
 import type { SerializableJsonValue } from '@cdauth/json-stream-es/src';
-// import { args } from './args';
-// console.log(Bun.peek(promise))
 
-
-
-// import { ReturnTypedNode } from 'ts-morph'
-// import {a } from 'type-fest'
-
-// class BunFileWrapper extends ReturnTypedNode<Bun.file> {
-//     // constructor(private bunFile: File) {
-//     //     super(...params); // call the constructor of the File class
-//     // }
-
-//     write(data: string | Buffer): Promise<number> {
-//         return this.write(data);
-//     }
-
-//     existsSync(): boolean {
-//         return this.existsSync();
-//     }
-// }
-
-
-// R.
-// import.meta.
-// Bun.
 
 enum CCodec {
   Plain = undefined,
@@ -126,8 +81,6 @@ type WriteJsonOptions = {
 
 
 export class Xfile {
-  // parsed: ParsedPath
-  // abspath: string
   filepath: string
   base: string
   dir: string
@@ -135,8 +88,6 @@ export class Xfile {
   file: BunFile
 
   constructor(filepath: string, baseSize = 1) {
-    // this.abspath = path.resolve(filepath)
-    // this.parsed = path.parse(filepath);
     this.filepath = filepath
     const parsed = path.parse(filepath)
     this.base = parsed.base.split('.').slice(0, baseSize).join('.')
@@ -159,23 +110,9 @@ export class Xfile {
     }
     throw new Error(`No more files found after ${limit} iterations`)
   }
-  induceSerialization = (content: any) => {
-
-
-    if (typeof content === 'object') {
-      return JSON.stringify(content, null, 2)
-    }
-    return content
-  }
 
   getSibling = (ext: string) => this.fileWithExt(ext)
-  // file = () => this.fileWithExt(this.ext)
   hasSibling = (ext: string) => this.fileWithExt(ext).existsSync();
-  // formatContent = (content: any) => {
-  //     if (typeof content === 'object') {
-  //         return JSON.stringify(content, null, 2)
-  //     }
-  // }
 
   writeTabular = async (content: any) => {
     return new Promise((resolve, reject) => {
@@ -221,33 +158,9 @@ export class Xfile {
       const re = parseEncoder(this.filepath)
       const encoding = opts?.compression || re?.encoding
       const output = createWriteStream(this.filepath, { encoding: 'utf8' });
-      console.log({ encoding, p: this.filepath })
-      // let processing = Readable.from(J.stringifyJsonStream(content) as any)
       let processing = Readable.from(
         re.format == CFormat.JsonLines ? content.map(JSON.stringify).join(',\n') :
           JSON.stringify(content))
-      // if (args.stringify) {
-      // processing = Readable.from(JSON.stringify(content))
-      //     console.log('writing stringify')
-      // }
-      if (args.spawn) {
-        console.log('writing spawn')
-        const sp = Bun.spawn(["zstd", "-", "-6", "--stdout"], {
-          stdin: processing,
-          stdout: this.file,
-          onExit(proc, exitCode, signalCode, error) {
-            console.error({ exitCode, signalCode, error })
-            return exitCode === 0 ? resolve(exitCode) : reject(error)
-          },
-        })
-        // sp.stdin?.write(JSON.stringify(content))
-        return sp.exited
-        // await sp.exited 
-        // console.log(sp.stderr)
-        // console.log(sp.stdout)
-        // sp.stdout.pipeTo()
-      }
-      // return
       if (encoding) {
         if (encoding === CCodec.Zstd) {
           processing.pipe(ZSTDCompress(6)).pipe(output)
@@ -273,13 +186,6 @@ export class Xfile {
 
   writeFile = async (content: string | ArrayBufferLike | Uint8Array, opts: { compression?: CCodec }) => {
     const { compression } = opts
-    // if (compression === 'zstd') {
-    //      if (!this.zstdInit) {
-    //          await init()
-    //          this.zstdInit = true
-    //      }
-    // return Bun.write(this.file, compress(Buffer.from(content)), { createPath: true })
-    // }
     if (compression === CCodec.Gzip) {
       content = Bun.gzipSync(content as any)
     } else if (compression === CCodec.Zlib) {
@@ -287,11 +193,8 @@ export class Xfile {
     } else if (compression) {
       throw new Error(`Unsupported compression: ${compression} ${this.filepath}`)
     }
-    // console.log("WRITEFILE", { content })
     return Bun.write(this.filepath, content, { createPath: true })
   }
-  // export async function* lineGenerator(stream: ReadableStream, decoder = new TextDecoder()) {
-
   jsonLines = function() {
     const { encoding, format } = parseEncoder(this.filepath)
     if (encoding === CCodec.Zstd) {
@@ -364,43 +267,13 @@ export class Xfile {
 }
 
 
-// export const xfile = (...params) => Bun.file(...params)
 
 if (import.meta.main) {
-
-
-
-  // console.log()
   const path = args._[0]
   const file = new Xfile(path)
-  // const resp = file.lines()
-  // console.log({ resp })
-  // const rdr = file.lines()
   for await (let li of file.jsonLines()) {
     console.log({ li })
   }
-
-  // console.log({ file })
-  // const cont = await Bun.file(args.input)
-  // console.time('write')
-  // await file.writeEncode(cont, { pretty: true })
-  // console.timeEnd('write')
-  process.exit(0)
-  // process.exit(0)
-  // if (path.includes('json')) {
-  // } else
-  // await file.writeTabular(require('/me/datasets/entreprise/finalx.json'))
-  // console.log('here', file.filepath, file.existsSync())
-  // const nextfiel = file.getNextSibling("{}.json.gz")
-  // console.log({ nextfiel })
-  // await nextfiel.writeJson({ hello: 'world', date: new Date() }, { compression: 'gzip' })
-  // sib.writeJson({ hello: 'world' })
-  // console.log(await sib.file.json())
-  // console.log('has', await sib.file().exists())
-  // sib.file().writer().write(JSON.stringify({ hello: 'world' }, null, 2))
-  // sib.getNextSibling().then(e => console.log('next', e))
-  // console.log(sib.nameWithExt('.jsonx'))
-
 }
 
 export default Xfile
