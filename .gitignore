@@ -11,3 +11,4 @@ dist
 watch/*
 .DS_Store
 trash
+.trash
